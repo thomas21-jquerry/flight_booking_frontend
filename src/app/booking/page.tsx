@@ -183,13 +183,17 @@ export default function BookingPage() {
         })
       }
       let returnData = [];
-      for(let i = 0; i < seatQuantities.return; i++) {
-        returnData.push({
-            flight_id: flights.return?.id,
-            seat_class: selectedClasses.return,
-            passenger_name: passengerNames.return[i]
-        })
+
+      if(flights?.return){
+        for(let i = 0; i < seatQuantities?.return; i++) {
+            returnData.push({
+                flight_id: flights.return?.id,
+                seat_class: selectedClasses?.return,
+                passenger_name: passengerNames?.return[i]
+            })
+          }
       }
+     
       data.push(...departureData, ...returnData);
       const requestData = {
         data: data,
@@ -211,7 +215,7 @@ export default function BookingPage() {
       }
 
       const booking = await bookingResponse.json()
-      router.push(`/bookings/${booking.id}/confirmation`)
+      router.push(`/bookings`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process booking')
     } finally {
@@ -432,7 +436,7 @@ export default function BookingPage() {
           disabled={loading}
           className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
         >
-          {loading ? 'Processing...' : 'Proceed to Payment'}
+          {loading ? 'Processing...' : 'Book Now'}
         </button>
       </div>
     </div>
