@@ -10,6 +10,7 @@ interface Booking {
   passenger_name: string
   seat_class: string
   created_at: string
+  total_price_paid: number
   flights: {
     airline: string
     flightNumber: string
@@ -47,7 +48,7 @@ export default function BookingsPage() {
 
         const data = await response.json()
         console.log(data, "data")
-        setBookings(data)
+        setBookings(data.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load bookings')
       } finally {
@@ -103,9 +104,14 @@ export default function BookingsPage() {
               {booking.flights.origin} → {booking.flights.destination}
             </p>
           </div>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-            {booking.seat_class}
-          </span>
+          <div className="text-right">
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+              {booking.seat_class}
+            </span>
+            <p className="mt-2 text-lg font-semibold text-green-600">
+              ₹{booking.total_price_paid.toLocaleString()}
+            </p>
+          </div>
         </div>
         
         <div className="space-y-2">
@@ -154,12 +160,12 @@ export default function BookingsPage() {
         </div>
 
         <div className="mt-4">
-          <button
+          {/* <button
             onClick={() => router.push(`/bookings/${booking.id}`)}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
             View Details →
-          </button>
+          </button> */}
         </div>
       </div>
     )

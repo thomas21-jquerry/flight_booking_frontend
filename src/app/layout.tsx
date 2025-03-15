@@ -30,6 +30,9 @@ export default function RootLayout({
                 <Link href="/flights" className="text-gray-700 hover:text-gray-900">
                   Flights
                 </Link>
+                <Link href="/tickets" className="text-gray-700 hover:text-gray-900">
+                  My Tickets
+                </Link>
                 <Link href="/auth/login" className="text-gray-700 hover:text-gray-900">
                   Login
                 </Link>
