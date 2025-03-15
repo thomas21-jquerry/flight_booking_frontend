@@ -42,17 +42,17 @@ export default function AboutPage() {
     {
       title: 'Easy Booking Process',
       description: 'Book your flights in just a few clicks with our intuitive interface.',
-      image: '/easy-booking.jpg',
+      image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1000&auto=format&fit=crop',
     },
     {
       title: 'Flexible Cancellation',
       description: 'Change or cancel your flights with minimal fees and hassle.',
-      image: '/flexible-cancel.jpg',
+      image: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?q=80&w=1000&auto=format&fit=crop',
     },
     {
       title: 'Premium Support',
       description: '24/7 customer support to assist you before, during, and after your journey.',
-      image: '/support.jpg',
+      image: 'https://images.unsplash.com/photo-1534536281715-e28d76689b4d?q=80&w=1000&auto=format&fit=crop',
     },
   ]
 
@@ -140,6 +140,9 @@ export default function AboutPage() {
                     alt={feature.title}
                     fill
                     className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    priority={false}
+                    quality={75}
                   />
                 </div>
                 <div className="p-6">
