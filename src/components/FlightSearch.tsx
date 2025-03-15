@@ -120,10 +120,10 @@ export default function FlightSearch() {
             </div>
             <div className="text-right">
               <p className="text-xl font-bold text-blue-600">
-                ₹{flight.price.toLocaleString()}
+                ₹{flight.economy_price.toLocaleString()}
               </p>
               <p className="text-sm text-gray-500">
-                {flight.seatsAvailable} seats available
+                {flight.economy_seats} seats available
               </p>
               <button
                 className="mt-2 px-4 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

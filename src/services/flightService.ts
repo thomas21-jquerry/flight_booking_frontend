@@ -12,9 +12,18 @@ export interface Flight {
   destination: string;
   departure_time: string;
   arrival_time: string;
-  price: number;
-  seatsAvailable: number;
+  duration: string;
+  economy_price: number;
+  premium_price: number;
+  business_price: number;
+  first_class_price: number;
+  economy_seats: number;
+  premium_seats: number;
+  business_seats: number;
+  first_class_seats: number;
+  created_at: string;
 }
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 export const searchFlights = async (params: FlightSearchParams): Promise<Flight[]> => {
