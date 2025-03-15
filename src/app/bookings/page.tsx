@@ -37,7 +37,7 @@ export default function BookingsPage() {
           return
         }
 
-        let response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings`, {
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
           },

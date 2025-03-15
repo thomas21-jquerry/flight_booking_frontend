@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { UserProfile, getUserProfile, updateUserProfile } from '@/services/userService'
+import Image from 'next/image';
+import { Session } from '@supabase/auth-helpers-nextjs';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -10,9 +12,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  
 
   useEffect(() => {
-    const fetchProfile = async (session: any) => {
+    const fetchProfile = async (session: Session | null) => {
       if (!session) {
         setLoading(false)
         return
@@ -88,11 +91,13 @@ export default function ProfilePage() {
           <div className="flex items-center space-x-8">
             <div className="relative w-32 h-32">
               {profile?.profile_photo_url ? (
-                <img
-                  src={profile.profile_photo_url}
-                  alt={profile.full_name}
-                  className="w-full h-full rounded-full object-cover ring-4 ring-white"
-                />
+                <Image
+                src={profile.profile_photo_url}
+                alt={profile.full_name}
+                width={100}  // Set a specific width
+                height={100} // Set a specific height
+                className="w-full h-full rounded-full object-cover ring-4 ring-white"
+              />
               ) : (
                 <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center">
                   <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,11 +169,13 @@ export default function ProfilePage() {
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Photo</h3>
                   {profile.profile_photo_url ? (
-                    <img
-                      src={profile.profile_photo_url}
-                      alt={profile.full_name}
-                      className="w-full max-w-xs rounded-lg object-cover"
-                    />
+                    <Image
+                    src={profile.profile_photo_url}
+                    alt={profile.full_name}
+                    width={150} // Adjust width as needed
+                    height={150} // Adjust height as needed
+                    className="w-full max-w-xs rounded-lg object-cover"
+                  />
                   ) : (
                     <div className="bg-gray-100 rounded-lg p-4 text-center">
                       <p className="text-gray-500">No profile photo added</p>
@@ -256,9 +263,11 @@ export default function ProfilePage() {
                   </div>
                   {profile?.profile_photo_url && (
                     <div className="mt-4">
-                      <img
+                      <Image
                         src={profile.profile_photo_url}
                         alt="Current profile photo"
+                        width={200} // Adjust width as needed
+                        height={200} // Adjust height as needed
                         className="w-full max-w-xs rounded-lg object-cover"
                       />
                     </div>

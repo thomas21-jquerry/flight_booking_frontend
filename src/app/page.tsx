@@ -242,7 +242,7 @@ export default function LandingPage() {
               What Our Customers Say
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Don't just take our word for it. Here's what travelers have to say about their experience with SkyWings.
+            Don&apos;t just take our word for it. Here&apos;s what travelers have to say about their experience with SkyWings.
             </p>
           </div>
 
@@ -262,7 +262,7 @@ export default function LandingPage() {
                     <p className="text-sm text-gray-500">{testimonial.role}</p>
                   </div>
                 </div>
-                <p className="text-gray-600 italic">"{testimonial.quote}"</p>
+                <p className="text-gray-600 italic">&quot;{testimonial.quote}&quot;</p>
               </div>
             ))}
           </div>

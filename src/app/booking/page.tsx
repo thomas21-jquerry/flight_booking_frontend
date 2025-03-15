@@ -4,32 +4,34 @@ import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Flight, getFlightById } from '@/services/flightService'
 import { supabase } from '@/lib/supabase'
+import { Suspense } from 'react'
 
-type ClassType = 'economy' | 'premium' | 'business' | 'first_class';
+type ClassType = 'economy' | 'premium' | 'business' | 'first_class'
 
 interface SelectedClasses {
-  departure: ClassType;
-  return: ClassType;
+  departure: ClassType
+  return: ClassType
 }
 
 interface SeatQuantities {
-  departure: number;
-  return: number;
+  departure: number
+  return: number
 }
 
 interface PassengerNames {
-  departure: string[];
-  return: string[];
+  departure: string[]
+  return: string[]
 }
 
 const capitalizeFirstLetter = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
-export default function BookingPage() {
+// Component containing the booking logic
+function BookingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   // All state hooks
   const [flights, setFlights] = useState<{
     departure?: Flight
@@ -39,41 +41,41 @@ export default function BookingPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedClasses, setSelectedClasses] = useState<SelectedClasses>({
     departure: 'economy',
-    return: 'economy'
+    return: 'economy',
   })
   const [seatQuantities, setSeatQuantities] = useState<SeatQuantities>({
     departure: 1,
-    return: 1
+    return: 1,
   })
   const [passengerNames, setPassengerNames] = useState<PassengerNames>({
     departure: [''],
-    return: ['']
+    return: [''],
   })
 
   // Memoized helper functions
   const getPrice = useCallback((flight: Flight, classType: ClassType) => {
     switch (classType) {
       case 'economy':
-        return flight.economy_price;
+        return flight.economy_price
       case 'premium':
-        return flight.premium_price;
+        return flight.premium_price
       case 'business':
-        return flight.business_price;
+        return flight.business_price
       case 'first_class':
-        return flight.first_class_price;
+        return flight.first_class_price
     }
   }, [])
 
   const getSeats = useCallback((flight: Flight, classType: ClassType) => {
     switch (classType) {
       case 'economy':
-        return flight.economy_seats;
+        return flight.economy_seats
       case 'premium':
-        return flight.premium_seats;
+        return flight.premium_seats
       case 'business':
-        return flight.business_seats;
+        return flight.business_seats
       case 'first_class':
-        return flight.first_class_seats;
+        return flight.first_class_seats
     }
   }, [])
 
@@ -90,7 +92,7 @@ export default function BookingPage() {
 
         const departureDetails = await getFlightById(departureFlight)
         const flightDetails: { departure: Flight; return?: Flight } = {
-          departure: departureDetails
+          departure: departureDetails,
         }
 
         if (returnFlight) {
@@ -111,54 +113,68 @@ export default function BookingPage() {
 
   // Effect for updating passenger names when seat quantities change
   useEffect(() => {
-    setPassengerNames(prev => ({
-      departure: Array(seatQuantities.departure).fill('').map((_, i) => prev.departure[i] || ''),
-      return: Array(seatQuantities.return).fill('').map((_, i) => prev.return[i] || '')
+    setPassengerNames((prev) => ({
+      departure: Array(seatQuantities.departure)
+        .fill('')
+        .map((_, i) => prev.departure[i] || ''),
+      return: Array(seatQuantities.return)
+        .fill('')
+        .map((_, i) => prev.return[i] || ''),
     }))
   }, [seatQuantities.departure, seatQuantities.return])
 
   // Memoized handlers
-  const handleQuantityChange = useCallback((flightType: 'departure' | 'return', change: number) => {
-    setSeatQuantities(prev => {
-      const newQuantity = Math.max(1, prev[flightType] + change)
-      const maxSeats = flights[flightType] ? getSeats(flights[flightType]!, selectedClasses[flightType]) : 1
-      return {
+  const handleQuantityChange = useCallback(
+    (flightType: 'departure' | 'return', change: number) => {
+      setSeatQuantities((prev) => {
+        const newQuantity = Math.max(1, prev[flightType] + change)
+        const maxSeats = flights[flightType]
+          ? getSeats(flights[flightType]!, selectedClasses[flightType])
+          : 1
+        return {
+          ...prev,
+          [flightType]: Math.min(newQuantity, maxSeats),
+        }
+      })
+    },
+    [flights, selectedClasses, getSeats]
+  )
+
+  const handlePassengerNameChange = useCallback(
+    (flightType: 'departure' | 'return', index: number, value: string) => {
+      setPassengerNames((prev) => ({
         ...prev,
-        [flightType]: Math.min(newQuantity, maxSeats)
-      }
-    })
-  }, [flights, selectedClasses, getSeats])
+        [flightType]: prev[flightType].map((name, i) =>
+          i === index ? value : name
+        ),
+      }))
+    },
+    []
+  )
 
-  const handlePassengerNameChange = useCallback((
-    flightType: 'departure' | 'return',
-    index: number,
-    value: string
-  ) => {
-    setPassengerNames(prev => ({
-      ...prev,
-      [flightType]: prev[flightType].map((name, i) => 
-        i === index ? value : name
-      )
-    }))
-  }, [])
-
-  const handleClassSelection = useCallback((flightType: 'departure' | 'return', type: ClassType) => {
-    setSelectedClasses(prev => ({
-      ...prev,
-      [flightType]: type
-    }))
-    setSeatQuantities(prev => ({
-      ...prev,
-      [flightType]: 1
-    }))
-  }, [])
+  const handleClassSelection = useCallback(
+    (flightType: 'departure' | 'return', type: ClassType) => {
+      setSelectedClasses((prev) => ({
+        ...prev,
+        [flightType]: type,
+      }))
+      setSeatQuantities((prev) => ({
+        ...prev,
+        [flightType]: 1,
+      }))
+    },
+    []
+  )
 
   const handleProceedToPayment = useCallback(async () => {
     setLoading(true)
     setError(null)
 
-    const departureNamesValid = passengerNames.departure.every(name => name.trim() !== '')
-    const returnNamesValid = !flights.return || passengerNames.return.every(name => name.trim() !== '')
+    const departureNamesValid = passengerNames.departure.every(
+      (name) => name.trim() !== ''
+    )
+    const returnNamesValid =
+      !flights.return || passengerNames.return.every((name) => name.trim() !== '')
 
     if (!departureNamesValid || !returnNamesValid) {
       setError('Please enter names for all passengers')
@@ -167,55 +183,59 @@ export default function BookingPage() {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) {
         router.push('/auth/login')
         return
       }
 
-      let data = [];
-      let departureData = [];
-      for(let i = 0; i < seatQuantities.departure; i++) {
+      const data = []
+      const departureData = []
+      for (let i = 0; i < seatQuantities.departure; i++) {
         departureData.push({
-            flight_id: flights.departure?.id,
-            seat_class: selectedClasses.departure,
-            passenger_name: passengerNames.departure[i]
+          flight_id: flights.departure?.id,
+          seat_class: selectedClasses.departure,
+          passenger_name: passengerNames.departure[i],
         })
       }
-      let returnData = [];
+      const returnData = []
 
-      if(flights?.return){
-        for(let i = 0; i < seatQuantities?.return; i++) {
-            returnData.push({
-                flight_id: flights.return?.id,
-                seat_class: selectedClasses?.return,
-                passenger_name: passengerNames?.return[i]
-            })
-          }
+      if (flights?.return) {
+        for (let i = 0; i < seatQuantities?.return; i++) {
+          returnData.push({
+            flight_id: flights.return?.id,
+            seat_class: selectedClasses?.return,
+            passenger_name: passengerNames?.return[i],
+          })
+        }
       }
-     
-      data.push(...departureData, ...returnData);
+
+      data.push(...departureData, ...returnData)
       const requestData = {
         data: data,
-        return_booked: flights.return ? true : false
+        return_booked: flights.return ? true : false,
       }
       console.log(requestData, 'requestData')
-      
-      const bookingResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings/create`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      })
+
+      const bookingResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings/create`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        }
+      )
 
       if (!bookingResponse.ok) {
         const errorText = await bookingResponse.text()
         throw new Error(errorText || 'Failed to create booking')
       }
 
-      const booking = await bookingResponse.json()
       router.push(`/bookings`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process booking')
@@ -239,9 +259,7 @@ export default function BookingPage() {
   if (error) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-red-50 text-red-500 p-4 rounded-lg mb-4">
-          {error}
-        </div>
+        <div className="bg-red-50 text-red-500 p-4 rounded-lg mb-4">{error}</div>
         <button
           onClick={() => router.push('/flights')}
           className="text-blue-600 hover:text-blue-800"
@@ -253,12 +271,23 @@ export default function BookingPage() {
   }
 
   // Calculate total price
-  const totalPrice = 
-    (flights.departure ? (getPrice(flights.departure, selectedClasses.departure) ?? 0) * seatQuantities.departure : 0) +
-    (flights.return ? (getPrice(flights.return, selectedClasses.return) ?? 0) * seatQuantities.return : 0)
+  const totalPrice =
+    (flights.departure
+      ? (getPrice(flights.departure, selectedClasses.departure) ?? 0) *
+        seatQuantities.departure
+      : 0) +
+    (flights.return
+      ? (getPrice(flights.return, selectedClasses.return) ?? 0) *
+        seatQuantities.return
+      : 0)
 
   // Render functions
-  const renderClassOption = (flight: Flight, type: ClassType, label: string, flightType: 'departure' | 'return') => {
+  const renderClassOption = (
+    flight: Flight,
+    type: ClassType,
+    label: string,
+    flightType: 'departure' | 'return'
+  ) => {
     const price = getPrice(flight, type)
     const seats = getSeats(flight, type)
     const isSelected = selectedClasses[flightType] === type
@@ -267,9 +296,7 @@ export default function BookingPage() {
       <button
         onClick={() => handleClassSelection(flightType, type)}
         className={`p-3 border rounded-lg text-left transition-colors ${
-          isSelected 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'hover:border-gray-400'
+          isSelected ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
         }`}
       >
         <p className="font-medium">{label}</p>
@@ -284,7 +311,9 @@ export default function BookingPage() {
   const renderSeatQuantitySelector = (flightType: 'departure' | 'return') => {
     const quantity = seatQuantities[flightType]
     const flight = flights[flightType]
-    const maxSeats = flight ? getSeats(flight, selectedClasses[flightType]) ?? 1 : 1
+    const maxSeats = flight
+      ? getSeats(flight, selectedClasses[flightType]) ?? 1
+      : 1
 
     return (
       <div className="flex items-center space-x-4 mt-4 p-3 bg-gray-50 rounded-lg">
@@ -306,9 +335,7 @@ export default function BookingPage() {
             +
           </button>
         </div>
-        <span className="text-sm text-gray-500">
-          (Max: {maxSeats})
-        </span>
+        <span className="text-sm text-gray-500">(Max: {maxSeats})</span>
       </div>
     )
   }
@@ -322,12 +349,19 @@ export default function BookingPage() {
         <h3 className="font-medium text-gray-700">Passenger Details</h3>
         <div className="space-y-3">
           {Array.from({ length: quantity }).map((_, index) => (
-            <div key={`${flightType}-passenger-${index}`} className="flex items-center space-x-2">
-              <span className="text-sm text-gray-500 w-24">Passenger {index + 1}</span>
+            <div
+              key={`${flightType}-passenger-${index}`}
+              className="flex items-center space-x-2"
+            >
+              <span className="text-sm text-gray-500 w-24">
+                Passenger {index + 1}
+              </span>
               <input
                 type="text"
                 value={names[index] || ''}
-                onChange={(e) => handlePassengerNameChange(flightType, index, e.target.value)}
+                onChange={(e) =>
+                  handlePassengerNameChange(flightType, index, e.target.value)
+                }
                 placeholder="Enter passenger name"
                 className="flex-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
@@ -358,16 +392,20 @@ export default function BookingPage() {
             <div className="space-y-4">
               <div>
                 <p className="text-lg">
-                  <span className="font-medium">{flights.departure.airline}</span> - {flights.departure.flightNumber}
+                  <span className="font-medium">{flights.departure.airline}</span> -{' '}
+                  {flights.departure.flightNumber}
                 </p>
                 <p className="text-gray-600">
-                  {capitalizeFirstLetter(flights.departure.origin)} → {capitalizeFirstLetter(flights.departure.destination)}
+                  {capitalizeFirstLetter(flights.departure.origin)} →{' '}
+                  {capitalizeFirstLetter(flights.departure.destination)}
                 </p>
                 <p className="text-gray-500">
-                  Departure: {flights.departure.departure_time} | 
-                  Arrival: {flights.departure.arrival_time}
+                  Departure: {flights.departure.departure_time} | Arrival:{' '}
+                  {flights.departure.arrival_time}
                 </p>
-                <p className="text-gray-500">Duration: {flights.departure.duration}</p>
+                <p className="text-gray-500">
+                  Duration: {flights.departure.duration}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -389,14 +427,16 @@ export default function BookingPage() {
             <div className="space-y-4">
               <div>
                 <p className="text-lg">
-                  <span className="font-medium">{flights.return.airline}</span> - {flights.return.flightNumber}
+                  <span className="font-medium">{flights.return.airline}</span> -{' '}
+                  {flights.return.flightNumber}
                 </p>
                 <p className="text-gray-600">
-                  {capitalizeFirstLetter(flights.return.origin)} → {capitalizeFirstLetter(flights.return.destination)}
+                  {capitalizeFirstLetter(flights.return.origin)} →{' '}
+                  {capitalizeFirstLetter(flights.return.destination)}
                 </p>
                 <p className="text-gray-500">
-                  Departure: {flights.return.departure_time} | 
-                  Arrival: {flights.return.arrival_time}
+                  Departure: {flights.return.departure_time} | Arrival:{' '}
+                  {flights.return.arrival_time}
                 </p>
                 <p className="text-gray-500">Duration: {flights.return.duration}</p>
               </div>
@@ -418,12 +458,15 @@ export default function BookingPage() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-semibold">Total Price</h2>
-              <p className="text-gray-600">
-                Including all taxes and fees
-              </p>
+              <p className="text-gray-600">Including all taxes and fees</p>
               <p className="text-sm text-gray-500">
-                Departure: {capitalizeFirstLetter(selectedClasses.departure)} Class ({seatQuantities.departure} {seatQuantities.departure === 1 ? 'seat' : 'seats'})
-                {flights.return && ` | Return: ${capitalizeFirstLetter(selectedClasses.return)} Class (${seatQuantities.return} ${seatQuantities.return === 1 ? 'seat' : 'seats'})`}
+                Departure: {capitalizeFirstLetter(selectedClasses.departure)}{' '}
+                Class ({seatQuantities.departure}{' '}
+                {seatQuantities.departure === 1 ? 'seat' : 'seats'})
+                {flights.return &&
+                  ` | Return: ${capitalizeFirstLetter(selectedClasses.return)} Class (${
+                    seatQuantities.return
+                  } ${seatQuantities.return === 1 ? 'seat' : 'seats'})`}
               </p>
             </div>
             <p className="text-2xl font-bold text-blue-600">
@@ -442,4 +485,22 @@ export default function BookingPage() {
       </div>
     </div>
   )
-} 
+}
+
+// Wrap the content in Suspense
+export default function BookingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading booking details...</p>
+          </div>
+        </div>
+      }
+    >
+      <BookingContent />
+    </Suspense>
+  )
+}

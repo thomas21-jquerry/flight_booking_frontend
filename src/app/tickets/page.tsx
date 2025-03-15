@@ -158,8 +158,8 @@ export default function TicketsPage() {
   }
 
   const renderTicket = (ticket: Ticket & { flights: Booking['flights'] }) => {
-    const departureDate = new Date(ticket.flights.departure_time)
-    const arrivalDate = new Date(ticket.flights.arrival_time)
+    // const departureDate = new Date(ticket.flights.departure_time)
+    // const arrivalDate = new Date(ticket.flights.arrival_time)
 
     return (
       <div key={ticket.id} className="relative mb-8 group">

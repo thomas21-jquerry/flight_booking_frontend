@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {supabase } from '@/lib/supabase'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function Login() {
@@ -11,7 +11,6 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +96,7 @@ export default function Login() {
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
           <Link href="/auth/register" className="text-blue-600 hover:text-blue-800">
             Register
           </Link>
