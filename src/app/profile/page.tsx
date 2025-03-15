@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import {supabase} from '@/lib/supabase'
 import { UserProfile, getUserProfile, updateUserProfile } from '@/services/userService'
 
 export default function ProfilePage() {
@@ -10,7 +10,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     const fetchProfile = async (session: any) => {
@@ -19,6 +18,7 @@ export default function ProfilePage() {
         return
       }
       try {
+        console.log("here 2")
         const userProfile = await getUserProfile(session.access_token)
         setProfile(userProfile)
       } catch (err) {
@@ -65,7 +65,8 @@ export default function ProfilePage() {
         throw new Error('No session found')
       }
 
-      const formData = new FormData(e.currentTarget)
+      const form = e.target as HTMLFormElement
+      const formData = new FormData(form)
       const updatedProfile: UserProfile = {
         full_name: formData.get('full_name') as string,
         age: parseInt(formData.get('age') as string),
@@ -108,45 +109,6 @@ export default function ProfilePage() {
           {successMessage}
         </div>
       )}
-
-      <div className="space-y-4 mb-8">
-        {/* Debug login button */}
-        <button
-          onClick={async () => {
-            const { data, error } = await supabase.auth.signInWithPassword({
-              email: 'thomasjosemanakkil10@gmail.com',
-              password: 'tom@123'
-            })
-            console.log('Sign in result:', { data, error })
-          }}
-          className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700"
-        >
-          Debug Login
-        </button>
-
-        {/* Check auth state button */}
-        <button
-          onClick={async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            const { data: { user } } = await supabase.auth.getUser()
-            console.log('Current auth state:', { session, user })
-          }}
-          className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 ml-4"
-        >
-          Check Auth State
-        </button>
-
-        {/* Sign out button */}
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut()
-            console.log('Signed out')
-          }}
-          className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 ml-4"
-        >
-          Sign Out
-        </button>
-      </div>
 
       {profile && !isEditing ? (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">

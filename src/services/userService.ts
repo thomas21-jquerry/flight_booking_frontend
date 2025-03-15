@@ -2,46 +2,38 @@ export interface UserProfile {
   full_name: string;
   age: number;
   gender: string;
-  profile_photo_url: string;
+  profile_photo_url?: string;
 }
 
-export const getUserProfile = async (token: string): Promise<UserProfile> => {
-  try {
-    const response = await fetch('http://localhost:3001/users/profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL;
+export async function getUserProfile(token: string): Promise<UserProfile> {
+  const response = await fetch(`${baseURL}/users/profile`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch user profile');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    throw error;
+  if (!response.ok) {
+    throw new Error('Failed to fetch profile');
   }
-};
 
-export const updateUserProfile = async (token: string, profile: UserProfile): Promise<UserProfile> => {
-  try {
-    const response = await fetch('http://localhost:3001/users/profile', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(profile),
-    });
+  return response.json();
+}
 
-    if (!response.ok) {
-      throw new Error('Failed to update user profile');
-    }
+export async function updateUserProfile(token: string, profile: UserProfile): Promise<UserProfile> {
+  console.log(profile, "profile")
+  const response = await fetch(`${baseURL}/users/profile`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(profile),
+  });
 
-    return await response.json();
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    throw error;
+  if (!response.ok) {
+    throw new Error('Failed to update profile');
   }
-}; 
+
+  return response.json();
+} 
