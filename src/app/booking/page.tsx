@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Flight, getFlightById } from '@/services/flightService'
 import { supabase } from '@/lib/supabase'
 
-type ClassType = 'economy' | 'premium' | 'business' | 'firstclass';
+type ClassType = 'economy' | 'premium' | 'business' | 'first_class';
 
 interface SelectedClasses {
   departure: ClassType;
@@ -59,7 +59,7 @@ export default function BookingPage() {
         return flight.premium_price;
       case 'business':
         return flight.business_price;
-      case 'firstclass':
+      case 'first_class':
         return flight.first_class_price;
     }
   }, [])
@@ -72,7 +72,7 @@ export default function BookingPage() {
         return flight.premium_seats;
       case 'business':
         return flight.business_seats;
-      case 'firstclass':
+      case 'first_class':
         return flight.first_class_seats;
     }
   }, [])
@@ -199,6 +199,7 @@ export default function BookingPage() {
         data: data,
         return_booked: flights.return ? true : false
       }
+      console.log(requestData, 'requestData')
       
       const bookingResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings/create`, {
         method: 'POST',
@@ -253,8 +254,8 @@ export default function BookingPage() {
 
   // Calculate total price
   const totalPrice = 
-    (flights.departure ? getPrice(flights.departure, selectedClasses.departure) * seatQuantities.departure : 0) +
-    (flights.return ? getPrice(flights.return, selectedClasses.return) * seatQuantities.return : 0)
+    (flights.departure ? (getPrice(flights.departure, selectedClasses.departure) ?? 0) * seatQuantities.departure : 0) +
+    (flights.return ? (getPrice(flights.return, selectedClasses.return) ?? 0) * seatQuantities.return : 0)
 
   // Render functions
   const renderClassOption = (flight: Flight, type: ClassType, label: string, flightType: 'departure' | 'return') => {
@@ -283,7 +284,7 @@ export default function BookingPage() {
   const renderSeatQuantitySelector = (flightType: 'departure' | 'return') => {
     const quantity = seatQuantities[flightType]
     const flight = flights[flightType]
-    const maxSeats = flight ? getSeats(flight, selectedClasses[flightType]) : 1
+    const maxSeats = flight ? getSeats(flight, selectedClasses[flightType]) ?? 1 : 1
 
     return (
       <div className="flex items-center space-x-4 mt-4 p-3 bg-gray-50 rounded-lg">
@@ -373,7 +374,7 @@ export default function BookingPage() {
                 {renderClassOption(flights.departure, 'economy', 'Economy', 'departure')}
                 {renderClassOption(flights.departure, 'premium', 'Premium', 'departure')}
                 {renderClassOption(flights.departure, 'business', 'Business', 'departure')}
-                {renderClassOption(flights.departure, 'firstclass', 'First Class', 'departure')}
+                {renderClassOption(flights.departure, 'first_class', 'First Class', 'departure')}
               </div>
 
               {renderSeatQuantitySelector('departure')}
@@ -404,7 +405,7 @@ export default function BookingPage() {
                 {renderClassOption(flights.return, 'economy', 'Economy', 'return')}
                 {renderClassOption(flights.return, 'premium', 'Premium', 'return')}
                 {renderClassOption(flights.return, 'business', 'Business', 'return')}
-                {renderClassOption(flights.return, 'firstclass', 'First Class', 'return')}
+                {renderClassOption(flights.return, 'first_class', 'First Class', 'return')}
               </div>
 
               {renderSeatQuantitySelector('return')}

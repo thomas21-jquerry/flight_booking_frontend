@@ -11,6 +11,7 @@ interface Ticket {
   passenger_name: string
   seat_class: 'economy' | 'premium' | 'business' | 'first_class'
   flight_id: string // Ticket's flight_id to match with booking flights
+  active: boolean,
 }
 
 interface Booking {
@@ -34,6 +35,8 @@ export default function TicketsPage() {
   const [tickets, setTickets] = useState<(Ticket & { flights: Booking['flights'] })[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cancellingTicketId, setCancellingTicketId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'active' | 'cancelled'>('active')
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -69,9 +72,12 @@ export default function TicketsPage() {
         
         const allTickets = await Promise.all(ticketPromises)
         const currentDate = new Date()
-        const futureTickets = allTickets
-          .filter((ticket) => new Date(ticket.flights.departure_time) > currentDate)
-        setTickets(futureTickets)
+        // Filter tickets based on active status and departure time
+        const activeTickets = allTickets.filter((ticket) => 
+          ticket.active && new Date(ticket.flights.departure_time) > currentDate
+        )
+        const cancelledTickets = allTickets.filter((ticket) => !ticket.active)
+        setTickets(activeTab === 'active' ? activeTickets : cancelledTickets)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load tickets')
       } finally {
@@ -80,7 +86,36 @@ export default function TicketsPage() {
     }
 
     fetchTickets()
-  }, [router])
+  }, [router, activeTab])
+
+  const handleCancelTicket = async (ticketId: string) => {
+    try {
+      setCancellingTicketId(ticketId)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/auth/login')
+        return
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel ticket')
+      }
+
+      // Remove the cancelled ticket from state
+      setTickets(prev => prev.filter(ticket => ticket.id !== ticketId))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel ticket')
+    } finally {
+      setCancellingTicketId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -127,8 +162,8 @@ export default function TicketsPage() {
     const arrivalDate = new Date(ticket.flights.arrival_time)
 
     return (
-      <div key={ticket.id} className="relative mb-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div key={ticket.id} className="relative mb-8 group">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl">
           <div className="bg-blue-600 px-6 py-4">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold text-white">
@@ -190,12 +225,19 @@ export default function TicketsPage() {
               <div className="text-sm text-gray-600">
                 Booking ID: {ticket.booking_id}
               </div>
-              {/* <button
-                onClick={() => router.push(`/bookings/${ticket.booking_id}`)}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                View Booking Details →
-              </button> */}
+              {ticket.active && (
+                <button
+                  onClick={() => handleCancelTicket(ticket.id)}
+                  disabled={cancellingTicketId === ticket.id}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-opacity duration-200 opacity-0 group-hover:opacity-100
+                    ${cancellingTicketId === ticket.id
+                      ? 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                    }`}
+                >
+                  {cancellingTicketId === ticket.id ? 'Cancelling...' : 'Cancel Ticket'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -207,38 +249,53 @@ export default function TicketsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">My Tickets</h1>
-        <button
-          onClick={() => router.push('/bookings')}
-          className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z" clipRule="evenodd" />
-          </svg>
-          View All Bookings
-        </button>
-      </div>
-
-      {tickets.length > 0 ? (
-        <div>
-          {tickets.map(renderTicket)}
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2zm12 3h.01M7 10h.01M7 14h.01M11 10h.01M11 14h.01M15 10h.01M15 14h.01M19 10h.01M19 14h.01" />
-          </svg>
-          <p className="text-gray-500 mb-4">No upcoming tickets found</p>
+        <div className="flex space-x-4">
           <button
-            onClick={() => router.push('/flights')}
-            className="text-blue-600 hover:text-blue-800 font-medium"
+            onClick={() => setActiveTab('active')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors
+              ${activeTab === 'active'
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
           >
-            Book a Flight
+            Active Tickets
+          </button>
+          <button
+            onClick={() => setActiveTab('cancelled')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors
+              ${activeTab === 'cancelled'
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+          >
+            Cancelled Tickets
           </button>
         </div>
-      )}
+      </div>
+
+      <div className="space-y-6">
+        {tickets.length > 0 ? (
+          tickets.map(renderTicket)
+        ) : (
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2zm12 3h.01M7 10h.01M7 14h.01M11 10h.01M11 14h.01M15 10h.01M15 14h.01M19 10h.01M19 14h.01" />
+            </svg>
+            <p className="text-gray-500 mb-4">No {activeTab} tickets found</p>
+            {activeTab === 'active' && (
+              <button
+                onClick={() => router.push('/flights')}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Book a Flight
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
