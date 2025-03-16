@@ -1,250 +1,261 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { Flight, getFlightById } from '@/services/flightService'
-import { supabase } from '@/lib/supabase'
-import { Suspense } from 'react'
+import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Flight, getFlightById } from '@/services/flightService';
+import { supabase } from '@/lib/supabase';
+import { Suspense } from 'react';
 
-type ClassType = 'economy' | 'premium' | 'business' | 'first_class'
+type ClassType = 'economy' | 'premium' | 'business' | 'first_class';
 
 interface SelectedClasses {
-  departure: ClassType
-  return: ClassType
+  departure: ClassType;
+  return: ClassType;
 }
 
 interface SeatQuantities {
-  departure: number
-  return: number
+  departure: number;
+  return: number;
 }
 
 interface PassengerNames {
-  departure: string[]
-  return: string[]
+  departure: string[];
+  return: string[];
 }
 
 const capitalizeFirstLetter = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-}
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
 
-// Component containing the booking logic
 function BookingContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // All state hooks
-  const [flights, setFlights] = useState<{
-    departure?: Flight
-    return?: Flight
-  }>({})
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [flights, setFlights] = useState<{ departure?: Flight; return?: Flight }>({});
+  const [loading, setLoading] = useState(true);
+  const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedClasses, setSelectedClasses] = useState<SelectedClasses>({
     departure: 'economy',
     return: 'economy',
-  })
+  });
   const [seatQuantities, setSeatQuantities] = useState<SeatQuantities>({
     departure: 1,
     return: 1,
-  })
+  });
   const [passengerNames, setPassengerNames] = useState<PassengerNames>({
     departure: [''],
     return: [''],
-  })
+  });
 
-  // Memoized helper functions
   const getPrice = useCallback((flight: Flight, classType: ClassType) => {
     switch (classType) {
-      case 'economy':
-        return flight.economy_price
-      case 'premium':
-        return flight.premium_price
-      case 'business':
-        return flight.business_price
-      case 'first_class':
-        return flight.first_class_price
+      case 'economy': return flight.economy_price;
+      case 'premium': return flight.premium_price;
+      case 'business': return flight.business_price;
+      case 'first_class': return flight.first_class_price;
     }
-  }, [])
+  }, []);
 
   const getSeats = useCallback((flight: Flight, classType: ClassType) => {
     switch (classType) {
-      case 'economy':
-        return flight.economy_seats
-      case 'premium':
-        return flight.premium_seats
-      case 'business':
-        return flight.business_seats
-      case 'first_class':
-        return flight.first_class_seats
+      case 'economy': return flight.economy_seats;
+      case 'premium': return flight.premium_seats;
+      case 'business': return flight.business_seats;
+      case 'first_class': return flight.first_class_seats;
     }
-  }, [])
+  }, []);
 
-  // Effect for fetching flight details
   useEffect(() => {
     const fetchFlightDetails = async () => {
       try {
-        const departureFlight = searchParams.get('departureFlight')
-        const returnFlight = searchParams.get('returnFlight')
+        const departureFlight = searchParams.get('departureFlight');
+        const returnFlight = searchParams.get('returnFlight');
 
         if (!departureFlight) {
-          throw new Error('No departure flight selected')
+          throw new Error('No departure flight selected');
         }
 
-        const departureDetails = await getFlightById(departureFlight)
+        const departureDetails = await getFlightById(departureFlight);
         const flightDetails: { departure: Flight; return?: Flight } = {
           departure: departureDetails,
-        }
+        };
 
         if (returnFlight) {
-          const returnDetails = await getFlightById(returnFlight)
-          flightDetails.return = returnDetails
+          const returnDetails = await getFlightById(returnFlight);
+          flightDetails.return = returnDetails;
         }
 
-        setFlights(flightDetails)
+        setFlights(flightDetails);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load flight details')
+        setError(err instanceof Error ? err.message : 'Failed to load flight details');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchFlightDetails()
-  }, [searchParams])
+    fetchFlightDetails();
+  }, [searchParams]);
 
-  // Effect for updating passenger names when seat quantities change
   useEffect(() => {
     setPassengerNames((prev) => ({
-      departure: Array(seatQuantities.departure)
-        .fill('')
-        .map((_, i) => prev.departure[i] || ''),
-      return: Array(seatQuantities.return)
-        .fill('')
-        .map((_, i) => prev.return[i] || ''),
-    }))
-  }, [seatQuantities.departure, seatQuantities.return])
+      departure: Array(seatQuantities.departure).fill('').map((_, i) => prev.departure[i] || ''),
+      return: Array(seatQuantities.return).fill('').map((_, i) => prev.return[i] || ''),
+    }));
+  }, [seatQuantities.departure, seatQuantities.return]);
 
-  // Memoized handlers
   const handleQuantityChange = useCallback(
     (flightType: 'departure' | 'return', change: number) => {
       setSeatQuantities((prev) => {
-        const newQuantity = Math.max(1, prev[flightType] + change)
+        const newQuantity = Math.max(1, prev[flightType] + change);
         const maxSeats = flights[flightType]
           ? getSeats(flights[flightType]!, selectedClasses[flightType])
-          : 1
+          : 1;
         return {
           ...prev,
           [flightType]: Math.min(newQuantity, maxSeats),
-        }
-      })
+        };
+      });
     },
     [flights, selectedClasses, getSeats]
-  )
+  );
 
   const handlePassengerNameChange = useCallback(
     (flightType: 'departure' | 'return', index: number, value: string) => {
       setPassengerNames((prev) => ({
         ...prev,
-        [flightType]: prev[flightType].map((name, i) =>
-          i === index ? value : name
-        ),
-      }))
+        [flightType]: prev[flightType].map((name, i) => (i === index ? value : name)),
+      }));
     },
     []
-  )
+  );
 
   const handleClassSelection = useCallback(
     (flightType: 'departure' | 'return', type: ClassType) => {
       setSelectedClasses((prev) => ({
         ...prev,
         [flightType]: type,
-      }))
+      }));
       setSeatQuantities((prev) => ({
         ...prev,
         [flightType]: 1,
-      }))
+      }));
     },
     []
-  )
+  );
 
   const handleProceedToPayment = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    setBookingInProgress(true);
+    setError(null);
 
-    const departureNamesValid = passengerNames.departure.every(
-      (name) => name.trim() !== ''
-    )
-    const returnNamesValid =
-      !flights.return || passengerNames.return.every((name) => name.trim() !== '')
+    const departureNamesValid = passengerNames.departure.every((name) => name.trim() !== '');
+    const returnNamesValid = !flights.return || passengerNames.return.every((name) => name.trim() !== '');
 
     if (!departureNamesValid || !returnNamesValid) {
-      setError('Please enter names for all passengers')
-      setLoading(false)
-      return
+      setError('Please enter names for all passengers');
+      setBookingInProgress(false);
+      return;
     }
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/auth/login')
-        return
+        router.push('/auth/login');
+        return;
       }
 
-      const data = []
-      const departureData = []
+      // Establish SSE connection first
+      const eventSource = new EventSource(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/booking/events?token=${session.access_token}`
+      );
+
+
+      eventSource.addEventListener('booking_confirmed', (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[Frontend] Parsed SSE data:', data);
+          if (data.booking_id && data.status === 'confirmed') {
+            router.push('/bookings');
+            eventSource.close();
+            setBookingInProgress(false);
+          }
+        } catch (err) {
+          console.error('[Frontend] Error parsing SSE data:', err);
+        }
+      });
+
+      eventSource.onerror = (error) => {
+        console.error('[Frontend] SSE connection failed:', error);
+        setError('Failed to receive booking confirmation');
+        setBookingInProgress(false);
+        eventSource.close();
+      };
+
+      eventSource.onopen = () => {
+        console.log('[Frontend] SSE connection opened');
+      };
+
+      // Prepare booking request data
+      const data = [];
+      const departureData = [];
       for (let i = 0; i < seatQuantities.departure; i++) {
         departureData.push({
           flight_id: flights.departure?.id,
           seat_class: selectedClasses.departure,
           passenger_name: passengerNames.departure[i],
-        })
+        });
       }
-      const returnData = []
-
-      if (flights?.return) {
-        for (let i = 0; i < seatQuantities?.return; i++) {
+      const returnData = [];
+      if (flights.return) {
+        for (let i = 0; i < seatQuantities.return; i++) {
           returnData.push({
             flight_id: flights.return?.id,
-            seat_class: selectedClasses?.return,
-            passenger_name: passengerNames?.return[i],
-          })
+            seat_class: selectedClasses.return,
+            passenger_name: passengerNames.return[i],
+          });
         }
       }
-
-      data.push(...departureData, ...returnData)
+      data.push(...departureData, ...returnData);
       const requestData = {
         data: data,
-        return_booked: flights.return ? true : false,
-      }
-      console.log(requestData, 'requestData')
+        return_booked: !!flights.return,
+      };
 
-      const bookingResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings/create`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
-        }
-      )
+      // Send booking request after SSE is established
+      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to ensure SSE is ready
+      const bookingResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
 
       if (!bookingResponse.ok) {
-        const errorText = await bookingResponse.text()
-        throw new Error(errorText || 'Failed to create booking')
+        const errorText = await bookingResponse.text();
+        throw new Error(errorText || 'Failed to create booking');
       }
 
-      router.push(`/bookings`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process booking')
-    } finally {
-      setLoading(false)
+      console.error('[Frontend] Error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to process booking');
+      setBookingInProgress(false);
     }
-  }, [flights, selectedClasses, seatQuantities, passengerNames, router])
+  }, [flights, selectedClasses, seatQuantities, passengerNames, router]);
 
-  // Early returns for loading and error states
+  useEffect(() => {
+    return () => {
+      // Cleanup SSE connections on unmount
+      if (typeof window !== 'undefined') {
+        const eventSources = document.getElementsByTagName('event-source');
+        for (let i = 0; i < eventSources.length; i++) {
+          (eventSources[i] as unknown as EventSource).close();
+        }
+      }
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -253,7 +264,7 @@ function BookingContent() {
           <p className="mt-4 text-gray-600">Loading flight details...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -267,30 +278,26 @@ function BookingContent() {
           ← Back to flight search
         </button>
       </div>
-    )
+    );
   }
 
-  // Calculate total price
   const totalPrice =
     (flights.departure
-      ? (getPrice(flights.departure, selectedClasses.departure) ?? 0) *
-        seatQuantities.departure
+      ? (getPrice(flights.departure, selectedClasses.departure) ?? 0) * seatQuantities.departure
       : 0) +
     (flights.return
-      ? (getPrice(flights.return, selectedClasses.return) ?? 0) *
-        seatQuantities.return
-      : 0)
+      ? (getPrice(flights.return, selectedClasses.return) ?? 0) * seatQuantities.return
+      : 0);
 
-  // Render functions
   const renderClassOption = (
     flight: Flight,
     type: ClassType,
     label: string,
     flightType: 'departure' | 'return'
   ) => {
-    const price = getPrice(flight, type)
-    const seats = getSeats(flight, type)
-    const isSelected = selectedClasses[flightType] === type
+    const price = getPrice(flight, type);
+    const seats = getSeats(flight, type);
+    const isSelected = selectedClasses[flightType] === type;
 
     return (
       <button
@@ -305,15 +312,13 @@ function BookingContent() {
         </p>
         <p className="text-sm text-gray-500">{seats} seats available</p>
       </button>
-    )
-  }
+    );
+  };
 
   const renderSeatQuantitySelector = (flightType: 'departure' | 'return') => {
-    const quantity = seatQuantities[flightType]
-    const flight = flights[flightType]
-    const maxSeats = flight
-      ? getSeats(flight, selectedClasses[flightType]) ?? 1
-      : 1
+    const quantity = seatQuantities[flightType];
+    const flight = flights[flightType];
+    const maxSeats = flight ? getSeats(flight, selectedClasses[flightType]) ?? 1 : 1;
 
     return (
       <div className="flex items-center space-x-4 mt-4 p-3 bg-gray-50 rounded-lg">
@@ -337,31 +342,24 @@ function BookingContent() {
         </div>
         <span className="text-sm text-gray-500">(Max: {maxSeats})</span>
       </div>
-    )
-  }
+    );
+  };
 
   const renderPassengerInputs = (flightType: 'departure' | 'return') => {
-    const quantity = seatQuantities[flightType]
-    const names = passengerNames[flightType]
+    const quantity = seatQuantities[flightType];
+    const names = passengerNames[flightType];
 
     return (
       <div className="mt-4 space-y-4">
         <h3 className="font-medium text-gray-700">Passenger Details</h3>
         <div className="space-y-3">
           {Array.from({ length: quantity }).map((_, index) => (
-            <div
-              key={`${flightType}-passenger-${index}`}
-              className="flex items-center space-x-2"
-            >
-              <span className="text-sm text-gray-500 w-24">
-                Passenger {index + 1}
-              </span>
+            <div key={`${flightType}-passenger-${index}`} className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500 w-24">Passenger {index + 1}</span>
               <input
                 type="text"
                 value={names[index] || ''}
-                onChange={(e) =>
-                  handlePassengerNameChange(flightType, index, e.target.value)
-                }
+                onChange={(e) => handlePassengerNameChange(flightType, index, e.target.value)}
                 placeholder="Enter passenger name"
                 className="flex-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
@@ -370,10 +368,9 @@ function BookingContent() {
           ))}
         </div>
       </div>
-    )
-  }
+    );
+  };
 
-  // Main render
   return (
     <div className="max-w-4xl mx-auto p-6">
       <button
@@ -384,6 +381,17 @@ function BookingContent() {
       </button>
 
       <h1 className="text-3xl font-bold mb-8">Flight Booking Details</h1>
+
+      {bookingInProgress && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center space-x-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-gray-700">Booking your ticket...</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         {flights.departure && (
@@ -407,14 +415,12 @@ function BookingContent() {
                   Duration: {flights.departure.duration}
                 </p>
               </div>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {renderClassOption(flights.departure, 'economy', 'Economy', 'departure')}
                 {renderClassOption(flights.departure, 'premium', 'Premium', 'departure')}
                 {renderClassOption(flights.departure, 'business', 'Business', 'departure')}
                 {renderClassOption(flights.departure, 'first_class', 'First Class', 'departure')}
               </div>
-
               {renderSeatQuantitySelector('departure')}
               {renderPassengerInputs('departure')}
             </div>
@@ -440,14 +446,12 @@ function BookingContent() {
                 </p>
                 <p className="text-gray-500">Duration: {flights.return.duration}</p>
               </div>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {renderClassOption(flights.return, 'economy', 'Economy', 'return')}
                 {renderClassOption(flights.return, 'premium', 'Premium', 'return')}
                 {renderClassOption(flights.return, 'business', 'Business', 'return')}
                 {renderClassOption(flights.return, 'first_class', 'First Class', 'return')}
               </div>
-
               {renderSeatQuantitySelector('return')}
               {renderPassengerInputs('return')}
             </div>
@@ -477,17 +481,16 @@ function BookingContent() {
 
         <button
           onClick={handleProceedToPayment}
-          disabled={loading}
+          disabled={bookingInProgress || loading}
           className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
         >
-          {loading ? 'Processing...' : 'Book Now'}
+          {bookingInProgress ? 'Processing...' : 'Book Now'}
         </button>
       </div>
     </div>
-  )
+  );
 }
 
-// Wrap the content in Suspense
 export default function BookingPage() {
   return (
     <Suspense
@@ -502,5 +505,5 @@ export default function BookingPage() {
     >
       <BookingContent />
     </Suspense>
-  )
+  );
 }

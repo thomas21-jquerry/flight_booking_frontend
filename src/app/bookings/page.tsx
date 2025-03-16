@@ -63,6 +63,7 @@ export default function BookingsPage() {
       }
 
       const data: ApiResponse = await response.json()
+      console.log(data.data.length)
       setTotal(data.total)
       setBookings(data.data)
       setTotalPages(data.totalPages)

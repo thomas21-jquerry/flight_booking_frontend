@@ -12,6 +12,8 @@
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
+    "eventsource": "^3.0.5",
+    "eventsource-polyfill": "^0.9.6",
     "framer-motion": "^12.5.0",
     "next": "15.2.2",
     "react": "^19.0.0",
@@ -21,6 +23,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/eventsource": "^1.1.15",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
