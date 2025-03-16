@@ -4,6 +4,15 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
+interface Flight {
+  airline: string
+  flightNumber: string
+  origin: string
+  destination: string
+  departure_time: string
+  arrival_time: string
+}
+
 interface Booking {
   id: string
   flight_id: string
@@ -11,14 +20,16 @@ interface Booking {
   seat_class: string
   created_at: string
   total_price_paid: number
-  flights: {
-    airline: string
-    flightNumber: string
-    origin: string
-    destination: string
-    departure_time: string
-    arrival_time: string
-  }
+  flights: Flight
+  return_flight_id?: string | null
+  return_flights?: Flight | null // Optional return flight details
+}
+
+interface ApiResponse {
+  data: Booking[]
+  page: number
+  total: number
+  totalPages: number
 }
 
 export default function BookingsPage() {
@@ -27,40 +38,51 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  const fetchBookings = async (page: number) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/auth/login')
+        return
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings?page=${page}&limit=10`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch bookings')
+      }
+
+      const data: ApiResponse = await response.json()
+      setTotal(data.total)
+      setBookings(data.data)
+      setTotalPages(data.totalPages)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load bookings')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          router.push('/auth/login')
-          return
-        }
+    fetchBookings(currentPage)
+  }, [currentPage, router])
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings`, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        })
-        if (!response.ok) {
-          throw new Error('Failed to fetch bookings')
-        }
-
-        const data = await response.json()
-        console.log(data, "data")
-        setBookings(data.data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load bookings')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchBookings()
-  }, [router])
+  useEffect(() => {
+    setCurrentPage(1) // Reset to page 1 when tab changes
+    fetchBookings(1)  // Fetch bookings for the new tab
+  }, [activeTab])
 
   const currentDate = new Date()
-  console.log(bookings, "bookings")
   const currentBookings = bookings.filter(booking => 
     new Date(booking.flights.departure_time) > currentDate
   )
@@ -154,22 +176,40 @@ export default function BookingsPage() {
           
           <div className="pt-4 border-t">
             <p className="text-sm text-gray-600">
-              Passenger: {booking.passenger_name}
+              Passenger: {booking.passenger_name || 'N/A'}
             </p>
+            {booking.return_flight_id && (
+              <p className="text-sm text-gray-600 mt-1">
+                Return Flight: {booking.return_flights?.flightNumber || 'Details unavailable'}
+              </p>
+            )}
           </div>
-        </div>
-
-        <div className="mt-4">
-          {/* <button
-            onClick={() => router.push(`/bookings/${booking.id}`)}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-          >
-            View Details →
-          </button> */}
         </div>
       </div>
     )
   }
+
+  const renderPagination = () => (
+    <div className="flex justify-center items-center mt-6 space-x-2">
+      <button
+        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+        className="px-3 py-1 rounded-md bg-gray-200 text-gray-700 disabled:opacity-50 hover:bg-gray-300"
+      >
+        Prev
+      </button>
+      <span className="text-gray-700">
+        Page {currentPage} of {totalPages}
+      </span>
+      <button
+        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages}
+        className="px-3 py-1 rounded-md bg-gray-200 text-gray-700 disabled:opacity-50 hover:bg-gray-300"
+      >
+        Next
+      </button>
+    </div>
+  )
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -186,7 +226,7 @@ export default function BookingsPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Current Bookings ({currentBookings.length})
+              Current Bookings ({total})
             </button>
             <button
               onClick={() => setActiveTab('past')}
@@ -205,7 +245,10 @@ export default function BookingsPage() {
       <div className="space-y-6">
         {activeTab === 'current' ? (
           currentBookings.length > 0 ? (
-            currentBookings.map(renderBookingCard)
+            <>
+              {currentBookings.map(renderBookingCard)}
+              {renderPagination()}
+            </>
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500">No current bookings</p>
@@ -219,7 +262,10 @@ export default function BookingsPage() {
           )
         ) : (
           pastBookings.length > 0 ? (
-            pastBookings.map(renderBookingCard)
+            <>
+              {pastBookings.map(renderBookingCard)}
+              {renderPagination()}
+            </>
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500">No past bookings</p>
@@ -229,4 +275,4 @@ export default function BookingsPage() {
       </div>
     </div>
   )
-} 
+}

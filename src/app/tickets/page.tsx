@@ -158,95 +158,119 @@ export default function TicketsPage() {
   }
 
   const renderTicket = (ticket: Ticket & { flights: Booking['flights'] }) => {
-    // const departureDate = new Date(ticket.flights.departure_time)
-    // const arrivalDate = new Date(ticket.flights.arrival_time)
-
     return (
       <div key={ticket.id} className="relative mb-8 group">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl">
-          <div className="bg-blue-600 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-white">
+          {/* Header */}
+          <div className="bg-blue-600 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left">
+              <h3 className="text-lg sm:text-xl font-bold text-white">
                 {ticket.flights.airline}
               </h3>
-              <span className="text-blue-100">
+              <span className="text-blue-100 text-sm sm:text-base">
                 Flight {ticket.flights.flight_number}
               </span>
             </div>
           </div>
-
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+  
+          {/* Flight Details */}
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 mb-6">
+              {/* Departure */}
               <div className="text-center flex-1">
-                <p className="text-3xl font-bold text-gray-800">{ticket.flights.origin}</p>
-                <p className="text-sm text-gray-500">{formatTime(ticket.flights.departure_time)}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-800">
+                  {ticket.flights.origin}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-500">
+                  {formatTime(ticket.flights.departure_time)}
+                </p>
               </div>
-              
-              <div className="flex-1 px-4">
-                <div className="relative">
-                  <div className="border-t-2 border-gray-300 absolute w-full top-1/2"></div>
-                  <div className="flex justify-center">
-                    <span className="bg-white px-2 text-gray-400 relative">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
-                    </span>
-                  </div>
+  
+              {/* Flight Path */}
+              <div className="flex-1 px-2 sm:px-4 relative">
+                <div className="border-t-2 border-gray-300 absolute w-full top-1/2 hidden sm:block"></div>
+                <div className="flex justify-center">
+                  <span className="bg-white px-2 text-gray-400 relative">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 sm:h-6 sm:w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 12h14M12 5l7 7-7 7"
+                      />
+                    </svg>
+                  </span>
                 </div>
-                <p className="text-center text-sm text-gray-500 mt-2">{ticket.flights.duration}</p>
+                <p className="text-center text-xs sm:text-sm text-gray-500 mt-2">
+                  {ticket.flights.duration}
+                </p>
               </div>
-
+  
+              {/* Arrival */}
               <div className="text-center flex-1">
-                <p className="text-3xl font-bold text-gray-800">{ticket.flights.destination}</p>
-                <p className="text-sm text-gray-500">{formatTime(ticket.flights.arrival_time)}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-800">
+                  {ticket.flights.destination}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-500">
+                  {formatTime(ticket.flights.arrival_time)}
+                </p>
               </div>
             </div>
-
-            <div className="border-t border-dashed pt-6 mt-6">
-              <div className="grid grid-cols-3 gap-6">
+  
+            {/* Passenger Details */}
+            <div className="border-t border-dashed pt-4 sm:pt-6 mt-4 sm:mt-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Passenger</p>
-                  <p className="font-medium">{ticket.passenger_name}</p>
+                  <p className="font-medium text-sm sm:text-base">{ticket.passenger_name}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Class</p>
-                  <p className="font-medium">{ticket.seat_class}</p>
+                  <p className="font-medium text-sm sm:text-base">{ticket.seat_class}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Date</p>
-                  <p className="font-medium">{formatDate(ticket.flights.departure_time)}</p>
+                  <p className="font-medium text-sm sm:text-base">
+                    {formatDate(ticket.flights.departure_time)}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-
-          <div className="bg-gray-50 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
+  
+          {/* Footer */}
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center">
+              <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-0">
                 Booking ID: {ticket.booking_id}
               </div>
               {ticket.active && (
                 <button
                   onClick={() => handleCancelTicket(ticket.id)}
                   disabled={cancellingTicketId === ticket.id}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-opacity duration-200 opacity-0 group-hover:opacity-100
-                    ${cancellingTicketId === ticket.id
-                      ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-opacity duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                    ${
+                      cancellingTicketId === ticket.id
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-red-100 text-red-700 hover:bg-red-200"
                     }`}
                 >
-                  {cancellingTicketId === ticket.id ? 'Cancelling...' : 'Cancel Ticket'}
+                  {cancellingTicketId === ticket.id ? "Cancelling..." : "Cancel Ticket"}
                 </button>
               )}
             </div>
           </div>
         </div>
-
-        <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-100 rounded-full"></div>
-        <div className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-100 rounded-full"></div>
       </div>
-    )
-  }
+    );
+  };
+  
 
   return (
     <div className="max-w-4xl mx-auto p-6">
