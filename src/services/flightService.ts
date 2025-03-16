@@ -49,6 +49,29 @@ export const searchFlights = async (params: FlightSearchParams): Promise<Flight[
   }
 };
 
+export const getRecommendedFlights =  async (params: FlightSearchParams): Promise<Flight[]> => {
+  try {
+    const queryParams = new URLSearchParams({
+      origin: params.origin,
+      destination: params.destination,
+      date: params.date,
+    });
+
+    const response = await fetch(`${API_BASE_URL}/flights/recommend?${queryParams}`);
+    
+    if (!response.ok) {
+      console.log(response)
+      throw new Error('Failed to fetch recommended flights');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error searching recommended flights:', error);
+    throw error;
+  }
+};
+
 export const getFlightById = async (id: string): Promise<Flight> => {
   try {
     const response = await fetch(`${API_BASE_URL}/flights/${id}`);

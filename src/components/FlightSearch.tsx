@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { searchFlights, type Flight } from '@/services/flightService'
+import { searchFlights, getRecommendedFlights, type Flight } from '@/services/flightService'
 import { useRouter } from 'next/navigation'
+
+// Assuming this is the new API function for recommended flights
 
 export default function FlightSearch() {
   const router = useRouter()
@@ -11,15 +13,15 @@ export default function FlightSearch() {
   const [departureDate, setDepartureDate] = useState('')
   const [returnDate, setReturnDate] = useState('')
   const [isRoundTrip, setIsRoundTrip] = useState(false)
-  const [flights, setFlights] = useState<{ departure: Flight[], return: Flight[] }>({ departure: [], return: [] })
-  const [selectedFlights, setSelectedFlights] = useState<{ departure?: Flight, return?: Flight }>({})
+  const [flights, setFlights] = useState<{ departure: Flight[]; return: Flight[] }>({ departure: [], return: [] })
+  const [recommendedFlights, setRecommendedFlights] = useState<{ departure: Flight[]; return: Flight[] }>({ departure: [], return: [] })
+  const [selectedFlights, setSelectedFlights] = useState<{ departure?: Flight; return?: Flight }>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState({ min: '', max: '' })
   const [activeTab, setActiveTab] = useState<'departure' | 'return'>('departure')
 
   useEffect(() => {
-    // Calculate date range on client side only
     const today = new Date().toISOString().split('T')[0]
     const maxDate = new Date()
     maxDate.setFullYear(maxDate.getFullYear() + 1)
@@ -27,11 +29,43 @@ export default function FlightSearch() {
     setDateRange({ min: today, max: maxDateString })
   }, [])
 
-  // Reset selected flights when changing trip type
   useEffect(() => {
     setSelectedFlights({})
     setActiveTab('departure')
   }, [isRoundTrip])
+
+  // Fetch recommended flights when all inputs are set
+  useEffect(() => {
+    const fetchRecommendedFlights = async () => {
+      if (!origin || !destination || !departureDate || (isRoundTrip && !returnDate)) return
+
+      try {
+        const departureRecommendations = await getRecommendedFlights({
+          origin: origin.toLowerCase(),
+          destination: destination.toLowerCase(),
+          date: new Date(departureDate).toISOString().split('T')[0],
+        })
+
+        let returnRecommendations: Flight[] = []
+        if (isRoundTrip && returnDate) {
+          returnRecommendations = await getRecommendedFlights({
+            origin: destination.toLowerCase(),
+            destination: origin.toLowerCase(),
+            date: new Date(returnDate).toISOString().split('T')[0],
+          })
+        }
+
+        setRecommendedFlights({
+          departure: departureRecommendations,
+          return: returnRecommendations,
+        })
+      } catch (err) {
+        console.error('Failed to fetch recommended flights:', err)
+      }
+    }
+
+    fetchRecommendedFlights()
+  }, [origin, destination, departureDate, returnDate, isRoundTrip])
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +74,6 @@ export default function FlightSearch() {
     setSelectedFlights({})
 
     try {
-      // Search for departure flights
       const departureResults = await searchFlights({
         origin: origin.toLowerCase(),
         destination: destination.toLowerCase(),
@@ -49,7 +82,6 @@ export default function FlightSearch() {
 
       let returnResults: Flight[] = []
       if (isRoundTrip && returnDate) {
-        // Search for return flights
         returnResults = await searchFlights({
           origin: destination.toLowerCase(),
           destination: origin.toLowerCase(),
@@ -59,7 +91,7 @@ export default function FlightSearch() {
 
       setFlights({
         departure: departureResults,
-        return: returnResults
+        return: returnResults,
       })
       setActiveTab('departure')
     } catch (err) {
@@ -70,76 +102,87 @@ export default function FlightSearch() {
   }
 
   const handleFlightSelect = (flight: Flight, type: 'departure' | 'return') => {
-    setSelectedFlights(prev => ({ ...prev, [type]: flight }))
+    setSelectedFlights((prev) => ({ ...prev, [type]: flight }))
     
     if (isRoundTrip) {
       if (type === 'departure') {
         setActiveTab('return')
       } else if (type === 'return') {
-        // Navigate to booking page with both flights
         router.push(`/booking?departureFlight=${selectedFlights.departure?.id}&returnFlight=${flight.id}`)
       }
     } else {
-      // Navigate to booking page with single flight
       router.push(`/booking?departureFlight=${flight.id}`)
     }
   }
 
-  const renderFlights = (flightList: Flight[], type: 'departure' | 'return') => (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold mb-4">
-        {type === 'departure' ? 'Departure' : 'Return'} Flights
-        {isRoundTrip && type === 'departure' && selectedFlights.departure && (
-          <span className="ml-2 text-sm text-green-600">
-            (Selected flight: {selectedFlights.departure.airline} - {selectedFlights.departure.flightNumber})
-          </span>
-        )}
-      </h2>
-      {flightList.map((flight) => (
-        <div
-          key={flight.id}
-          className={`bg-white p-4 rounded-lg shadow-md border ${
-            selectedFlights[type]?.id === flight.id
-              ? 'border-blue-500 ring-2 ring-blue-500'
-              : 'border-gray-200 hover:border-blue-300'
-          } cursor-pointer transition-all`}
-          onClick={() => handleFlightSelect(flight, type)}
-        >
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-medium">
-                {flight.airline} - {flight.flightNumber}
-              </h3>
-              <p className="text-gray-600">
-                {flight.origin} → {flight.destination}
-              </p>
-              <p className="text-sm text-gray-500">
-                Departure: {flight.departure_time} | 
-                Arrival: {flight.arrival_time}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xl font-bold text-blue-600">
-                ₹{flight.economy_price.toLocaleString()}
-              </p>
-              <p className="text-sm text-gray-500">
-                {flight.economy_seats} seats available
-              </p>
-              <button
-                className="mt-2 px-4 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleFlightSelect(flight, type)
-                }}
-              >
-                {selectedFlights[type]?.id === flight.id ? 'Selected' : 'Select'}
-              </button>
-            </div>
-          </div>
+  const renderFlights = (flightList: Flight[], type: 'departure' | 'return', isRecommended = false) => {
+    if (flightList.length === 0 && !isRecommended) {
+      return (
+        <div className="text-center py-8 bg-white rounded-lg shadow-md">
+          <p className="text-gray-500">No flights on this day</p>
         </div>
-      ))}
-    </div>
-  )
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold mb-4">
+          {isRecommended ? 'Recommended ' : ''}{type === 'departure' ? 'Departure' : 'Return'} Flights
+          {isRoundTrip && type === 'departure' && selectedFlights.departure && !isRecommended && (
+            <span className="ml-2 text-sm text-green-600">
+              (Selected flight: {selectedFlights.departure.airline} - {selectedFlights.departure.flightNumber})
+            </span>
+          )}
+        </h2>
+        {flightList.length === 0 && isRecommended ? (
+          <p className="text-gray-500">No recommended flights available</p>
+        ) : (
+          flightList.map((flight) => (
+            <div
+              key={flight.id}
+              className={`bg-white p-4 rounded-lg shadow-md border ${
+                selectedFlights[type]?.id === flight.id
+                  ? 'border-blue-500 ring-2 ring-blue-500'
+                  : 'border-gray-200 hover:border-blue-300'
+              } cursor-pointer transition-all`}
+              onClick={() => handleFlightSelect(flight, type)}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium">
+                    {flight.airline} - {flight.flightNumber}
+                  </h3>
+                  <p className="text-gray-600">
+                    {flight.origin} → {flight.destination}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Departure: {flight.departure_time} | Arrival: {flight.arrival_time}
+                  </p>
+                </div>
+                <div className="text-right">
+                <p className="text-sm text-black">
+                  starting from <span className="text-xl font-bold text-blue-600">₹{flight.economy_price.toLocaleString()}</span>
+                </p>
+                  <p className="text-sm text-gray-500">
+                    {flight.economy_seats + flight.first_class_seats + flight.business_seats+ flight.premium_seats} seats available
+                  </p>
+                  <button
+                    className="mt-2 px-4 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleFlightSelect(flight, type)
+                    }}
+                  >
+                    {selectedFlights[type]?.id === flight.id ? 'Selected' : 'Select'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -208,7 +251,6 @@ export default function FlightSearch() {
               value={departureDate}
               onChange={(e) => {
                 setDepartureDate(e.target.value)
-                // Clear return date if it's before new departure date
                 if (returnDate && returnDate < e.target.value) {
                   setReturnDate('')
                 }
@@ -254,7 +296,7 @@ export default function FlightSearch() {
         </div>
       )}
 
-      {(flights.departure.length > 0 || flights.return.length > 0) && (
+      {(flights.departure.length > 0 || flights.return.length > 0 || loading === false) && (
         <div className="space-y-6">
           {isRoundTrip && (
             <div className="flex gap-4 mb-4">
@@ -282,15 +324,19 @@ export default function FlightSearch() {
             </div>
           )}
           
-          {activeTab === 'departure' && flights.departure.length > 0 && (
-            renderFlights(flights.departure, 'departure')
-          )}
+          {activeTab === 'departure' && renderFlights(flights.departure, 'departure')}
+          {activeTab === 'return' && renderFlights(flights.return, 'return')}
           
-          {activeTab === 'return' && flights.return.length > 0 && (
-            renderFlights(flights.return, 'return')
+          {/* Recommended Flights Section */}
+          {(recommendedFlights.departure.length > 0 || recommendedFlights.return.length > 0) && (
+            <div className="mt-8">
+              <h1 className="text-2xl font-bold mb-4">Recommended Flights</h1>
+              {renderFlights(recommendedFlights.departure, 'departure', true)}
+              {isRoundTrip && renderFlights(recommendedFlights.return, 'return', true)}
+            </div>
           )}
         </div>
       )}
     </div>
   )
-} 
+}

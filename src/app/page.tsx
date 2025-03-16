@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import toast, { Toaster } from "react-hot-toast";
 
 export default function LandingPage() {
   const router = useRouter()
@@ -51,45 +52,60 @@ export default function LandingPage() {
     },
   ]
 
+  const handleSubscribe = () => {
+    console.log("hey there")
+    toast.success("Thank you for subscribing!");
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section with Video Background */}
-      <div className="relative h-[80vh] bg-gradient-to-r from-blue-600 to-blue-400 overflow-hidden">
-        <div className="absolute inset-0 bg-black/50 z-10"></div>
-        <video
-          autoPlay
-          loop
-          muted
-          className="absolute inset-0 w-full h-full object-cover"
-          poster="/hero-poster.jpg"
-        >
-          <source src="/hero-video.mp4" type="video/mp4" />
-        </video>
-        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-          <div className="text-white max-w-2xl">
-            <h1 className="text-5xl sm:text-6xl font-bold mb-6 leading-tight">
-              Your Journey Begins Here
-            </h1>
-            <p className="text-xl mb-8 text-gray-100">
-              Discover amazing destinations and create unforgettable memories with our exclusive flight deals.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => router.push('/flights')}
-                className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors duration-200 shadow-lg hover:shadow-xl"
-              >
-                Book Your Flight
-              </button>
-              <button
-                onClick={() => router.push('/about')}
-                className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white/10 transition-colors duration-200"
-              >
-                Learn More
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="relative h-[85vh] bg-gradient-to-r from-blue-700 to-blue-500 overflow-hidden">
+  {/* Gradient Overlay for Better Readability */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-transparent z-10"></div>
+
+  {/* Background Video */}
+  <video
+    autoPlay
+    loop
+    muted
+    className="absolute inset-0 w-full h-full object-cover brightness-75"
+    poster="/blackhole.webm"
+  >
+    <source src="/blackhole.webm" />
+  </video>
+
+  {/* Hero Content */}
+  <div className="relative z-20 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-full flex flex-col justify-center items-center text-center sm:items-start sm:text-left">
+    {/* Title with Glow & 3D Effect */}
+    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight drop-shadow-[0_4px_8px_rgba(255,255,255,0.5)] animate-fade-in-up">
+      ✈️ Your <span className="text-blue-300">Journey</span> Begins Here
+    </h1>
+
+    {/* Subtitle with Enhanced Readability */}
+    <p className="text-lg sm:text-xl text-gray-100 mt-4 backdrop-blur-xs bg-black/20 px-4 py-2 rounded-md animate-fade-in-up delay-200">
+      Discover amazing destinations and create unforgettable memories with our exclusive flight deals.
+    </p>
+
+    {/* Call-To-Action Buttons with Pop Effect */}
+    <div className="mt-6 flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-400">
+      <button
+        onClick={() => router.push('/flights')}
+        className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-100 transition-all duration-300 shadow-[0px_4px_20px_rgba(255,255,255,0.4)] hover:scale-105"
+      >
+        Book Your Flight
+      </button>
+      <button
+        onClick={() => router.push('/about')}
+        className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white/10 transition-all duration-300 shadow-[0px_4px_20px_rgba(255,255,255,0.3)] hover:scale-105"
+      >
+        Learn More
+      </button>
+    </div>
+  </div>
+</div>
+
+
 
       {/* Search Flight Quick Access */}
       {/* <div className="relative -mt-16 z-30">
@@ -270,39 +286,48 @@ export default function LandingPage() {
       </div>
 
       {/* Newsletter Section with Enhanced Design */}
-      <div className="relative py-24 bg-blue-600 overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="/newsletter-bg.jpg"
-            alt="Newsletter background"
-            fill
-            className="object-cover opacity-10"
-          />
-        </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Never Miss a Deal
-            </h2>
-            <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
-              Subscribe to our newsletter and be the first to know about exclusive flight offers and travel tips.
-            </p>
-            <div className="max-w-md mx-auto flex gap-4">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-6 py-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
-              />
-              <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200 shadow-lg hover:shadow-xl">
-                Subscribe
-              </button>
-            </div>
-            <p className="mt-4 text-sm text-blue-100">
-              By subscribing, you agree to our Privacy Policy and Terms of Service.
-            </p>
-          </div>
-        </div>
+      <div className="relative py-20 sm:py-24 bg-blue-600 overflow-hidden">
+  {/* Background Image */}
+  <div className="absolute inset-0">
+   
+  </div>
+
+  {/* Content Wrapper */}
+  <div className="relative max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+    <Toaster position="top-center" reverseOrder={false} />
+
+    {/* Header Text */}
+    <div className="text-center">
+      <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+        ✈️ Never Miss a Deal
+      </h2>
+      <p className="text-blue-100 text-lg sm:text-xl mb-6 sm:mb-8 max-w-2xl mx-auto">
+        Subscribe to our newsletter and be the first to know about exclusive flight offers and travel tips.
+      </p>
+
+      {/* Input + Button */}
+      <div className="w-full max-w-lg mx-auto flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <input
+          type="email"
+          placeholder="Enter your email"
+          className="w-full px-5 py-4 text-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 shadow-md"
+        />
+        <button
+          onClick={handleSubscribe}
+          className="w-full sm:w-auto bg-white text-blue-600 px-6 py-4 rounded-lg font-semibold hover:bg-blue-100 transition-all duration-300 shadow-lg hover:shadow-xl"
+        >
+          Subscribe
+        </button>
       </div>
+
+      {/* Terms */}
+      <p className="mt-4 text-sm text-blue-100">
+        By subscribing, you agree to our <span className="underline">Privacy Policy</span> and <span className="underline">Terms of Service</span>.
+      </p>
+    </div>
+  </div>
+</div>
+
     </div>
   )
 }
