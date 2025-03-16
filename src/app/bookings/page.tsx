@@ -180,7 +180,7 @@ export default function BookingsPage() {
             </p>
             {booking.return_flight_id && (
               <p className="text-sm text-gray-600 mt-1">
-                Return Flight: {booking.return_flights?.flightNumber || 'Details unavailable'}
+                Return Flight: {"yes" || 'Details unavailable'}
               </p>
             )}
           </div>
