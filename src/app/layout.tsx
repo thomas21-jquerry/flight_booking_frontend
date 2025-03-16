@@ -36,7 +36,14 @@ export default function RootLayout({
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.push('/')
+    document.cookie.split(";").forEach((cookie) => {
+      document.cookie = cookie
+        .replace(/^ +/, "") // Remove leading spaces
+        .replace(/=.*/, "=;expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/"); // Expire the cookie
+    });
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = "/";
   }
 
   return (
