@@ -178,11 +178,9 @@ export default function BookingsPage() {
             <p className="text-sm text-gray-600">
               Passenger: {booking.passenger_name || 'N/A'}
             </p>
-            {booking.return_flight_id && (
-              <p className="text-sm text-gray-600 mt-1">
-                Return Flight: {"yes" || 'Details unavailable'}
-              </p>
-            )}
+            <p className="text-sm text-gray-600 mt-1">
+                Return Flight: {booking.return_flight_id ? "Yes": "No"}
+            </p>
           </div>
         </div>
       </div>
