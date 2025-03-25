@@ -1,6 +1,7 @@
 # Flight Booking App
 
 A Next.js application for booking flights with Supabase authentication and database integration.
+The backend for this can be found at https://github.com/thomas21-jquerry/flight_booking_backend
 
 ## Features
 
